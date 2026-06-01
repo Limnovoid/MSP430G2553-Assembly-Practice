@@ -77,8 +77,10 @@ StopWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
 ;------------------------------------------------------------------------------
 
             bis.b   #1,&P1DIR               ; Set GPIO P1.0 (GREEN) to be an output
+            bis.b   #64,&P1DIR              ; Set GPIO P1.6 (RED) to be an output
 
             bic.b   #1,&P1OUT               ; Clear P1.0 (GREEN)
+            bic.b   #64,&P1OUT              ; Clear P1.6 (RED)
 
             bic.b   #8,&P1DIR               ; Set GPIO P1.3 to be an input
 
@@ -86,9 +88,11 @@ MainLoop    bit.b   #8,P1IN                 ; Is P1.3 closed (zero)?
             jz      Closed                  ; If yes, jump to Closed
                                             ; If no...
             bic.b   #1,&P1OUT               ; Clear P1.0 (GREEN)
+            bis.b   #64,&P1OUT              ; Set P1.0 (RED)
             jmp     MainLoop                ; Again
                                             ;
 Closed      bis.b   #1,&P1OUT               ; Set P1.0 (GREEN)
+            bic.b   #64,&P1OUT              ; Clear P1.0 (RED)
             jmp     MainLoop                ; Again
 
 ;------------------------------------------------------------------------------
