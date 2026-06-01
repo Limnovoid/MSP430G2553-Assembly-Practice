@@ -71,14 +71,26 @@
 ;------------------------------------------------------------------------------
 RESET       mov.w   #0280h,SP               ; Initialize stackpointer
 StopWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
-SetupP1     bis.b   #001h,&P1DIR            ; P1.0  output
+
+;------------------------------------------------------------------------------
+; Main loop here
+;------------------------------------------------------------------------------
+
+            bis.b   #1,&P1DIR               ; Set GPIO P1.0 (GREEN) to be an output
+
+            bic.b   #1,&P1OUT               ; Clear P1.0 (GREEN)
+
+            bic.b   #8,&P1DIR               ; Set GPIO P1.3 to be an input
+
+MainLoop    bit.b   #8,P1IN                 ; Is P1.3 closed (zero)?
+            jz      Closed                  ; If yes, jump to Closed
+                                            ; If no...
+            bic.b   #1,&P1OUT               ; Clear P1.0 (GREEN)
+            jmp     MainLoop                ; Again
                                             ;
-Mainloop    xor.b   #001h,&P1OUT            ; Toggle P1.0
-Wait        mov.w   #050000,R15             ; Delay to R15
-L1          dec.w   R15                     ; Decrement R15
-            jnz     L1                      ; Delay over?
-            jmp     Mainloop                ; Again
-                                            ;
+Closed      bis.b   #1,&P1OUT               ; Set P1.0 (GREEN)
+            jmp     MainLoop                ; Again
+
 ;------------------------------------------------------------------------------
 ;           Interrupt Vectors
 ;------------------------------------------------------------------------------
