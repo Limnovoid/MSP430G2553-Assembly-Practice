@@ -84,20 +84,39 @@ StopWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
 
             bic.b   #8,&P1DIR               ; Set GPIO P1.3 to be an input
 
+;                                            ; Configure GPIO resistors...
+;            bis.b   #8,&P1REN               ; Set P1.3 to connect to pull-up/pull-down resistors
+;            bis.b   #8,&P1OUT               ; Set P1.3 to pull up
+; Seems not required - switch is pulled up by default.
+
+                                            ; Configure GPIO interrupts...
+            bis.b   #8,&P1IES               ; Set P1.3 to interrupt on high-to-low (button pressed)
+            bic.b   #8,&P1IFG               ; Clear P1.3 interrupt flag
+            bis.b   #8,&P1IE                ; Set P1.3 interrupts enabled
+
+            bis.w   #GIE,SR                 ; General interrupt enable
+
 MainLoop    bit.b   #8,P1IN                 ; Is P1.3 closed (zero)?
             jz      Closed                  ; If yes, jump to Closed
                                             ; If no...
-            bic.b   #1,&P1OUT               ; Clear P1.0 (GREEN)
-            bis.b   #64,&P1OUT              ; Set P1.0 (RED)
+            bic.b   #64,&P1OUT              ; Clear P1.6 (RED)
             jmp     MainLoop                ; Again
                                             ;
-Closed      bis.b   #1,&P1OUT               ; Set P1.0 (GREEN)
-            bic.b   #64,&P1OUT              ; Clear P1.0 (RED)
+Closed      bis.b   #64,&P1OUT              ; Set P1.6 (RED)
             jmp     MainLoop                ; Again
+
+            ; P1 interrupt
+P1_ISR      bic.b   #8,&P1IFG               ; Clear P1.3 interrupt flag
+            xor.b   #1,&P1OUT               ; Toggle P1.0 (GREEN)
+            RETI                            ; Return interrupt
 
 ;------------------------------------------------------------------------------
 ;           Interrupt Vectors
 ;------------------------------------------------------------------------------
             .sect   ".reset"                ; MSP430 RESET Vector
             .short  RESET                   ;
-            .end
+                                            ;
+            .sect   ".int02"                ; Interrupt vector PORT1 for GPIO P1 - see linker file "lnk_msp430g2553.cmd"
+            .short  P1_ISR                  ;
+                                            ;
+            .end                            ; Program end
