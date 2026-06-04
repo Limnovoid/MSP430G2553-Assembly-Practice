@@ -94,6 +94,15 @@ StopWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
             bic.b   #8,&P1IFG               ; Clear P1.3 interrupt flag
             bis.b   #8,&P1IE                ; Set P1.3 interrupts enabled
 
+                                            ; Configure timers...
+            bis.w   #TASSEL_1,&TA0CTL       ; TA0 source to ACLK (32 768 Hz)
+            bis.w   #ID_0,&TA0CTL           ; TA0 divider to /1
+            bis.w   #MC_1,&TA0CTL           ; TA0 mode to 1 (up to TA0CCR0)
+            bis.w   #0,&TA0CCR0             ; Clear TA0CCR0 (halt timer)
+            bis.w   #TAIE,&TA0CTL           ; TA0 interrupt enable
+
+            and.b   #0,R4                   ; Clear R4
+
             bis.w   #GIE,SR                 ; General interrupt enable
 
 MainLoop    bit.b   #8,P1IN                 ; Is P1.3 closed (zero)?
@@ -107,16 +116,30 @@ Closed      bis.b   #64,&P1OUT              ; Set P1.6 (RED)
 
             ; P1 interrupt
 P1_ISR      bic.b   #8,&P1IFG               ; Clear P1.3 interrupt flag
-            xor.b   #1,&P1OUT               ; Toggle P1.0 (GREEN)
+            xor.b   #1,R4                   ; XOR R4 bit 0
+            jnz     TimerOn                 ; If non-zero, timer on
+
+            and.w   #0,&TA0CCR0             ; Clear TA0CCR0 (halt timer)
             RETI                            ; Return interrupt
+            
+TimerOn     bis.w   #0x7FFF, &TA0CCR0       ; TA0CCR0 to 32 767 (~1 second)
+            RETI                            ; Return interrupt
+
+            ; TA0 interrupt
+TA0_ISR     bic.w   #TAIFG,&TA0CTL          ; TA0 interrupt flag clear
+            xor.b   #1,&P1OUT               ; P1.0 (GREEN) toggle
+            RETI
 
 ;------------------------------------------------------------------------------
 ;           Interrupt Vectors
 ;------------------------------------------------------------------------------
             .sect   ".reset"                ; MSP430 RESET Vector
             .short  RESET                   ;
-                                            ;
+
             .sect   ".int02"                ; Interrupt vector PORT1 for GPIO P1 - see linker file "lnk_msp430g2553.cmd"
             .short  P1_ISR                  ;
-                                            ;
+
+            .sect   ".int08"                ; Interrupt vector for TAIFG, address 0FFE4h - see linker file "lnk_msp430g2553.cmd"
+            .short  TA0_ISR                 ;
+
             .end                            ; Program end
