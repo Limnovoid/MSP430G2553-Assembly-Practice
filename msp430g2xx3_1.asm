@@ -95,16 +95,16 @@ StopWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
             bis.b   #8,&P1IE                ; Set P1.3 interrupts enabled
 
                                             ; Configure timers...
-            bis.w   #TASSEL_1,&TA0CTL       ; TA0 source to ACLK (32 768 Hz)
-            bis.w   #ID_0,&TA0CTL           ; TA0 divider to /1
-            bis.w   #MC_1,&TA0CTL           ; TA0 mode to 1 (up to TA0CCR0)
-            clr.w   &TA0CCR0                ; Clear TA0CCR0 (halt timer)
-            bis.w   #TAIE,&TA0CTL           ; TA0 interrupt enable
+            bis     #TASSEL_1,&TA0CTL       ; TA0 source to ACLK (32 768 Hz)
+            bis     #ID_0,&TA0CTL           ; TA0 divider to /1
+            bis     #MC_1,&TA0CTL           ; TA0 mode to 1 (up to TA0CCR0)
+            clr     &TA0CCR0                ; Clear TA0CCR0 (halt timer)
+            bis     #TAIE,&TA0CTL           ; TA0 interrupt enable
 
             clr.b   R4                      ; Clear R4
             bis.b   #1,R4                   ; Set R4.0
 
-            bis.w   #GIE,SR                 ; General interrupt enable
+            bis     #GIE,SR                 ; General interrupt enable
 
 MainLoop    bit.b   #8,P1IN                 ; Is P1.3 closed (zero)?
             jz      Closed                  ; If yes, jump to Closed
@@ -120,14 +120,14 @@ P1_ISR      bic.b   #8,&P1IFG               ; Clear P1.3 interrupt flag
             xor.b   #1,R4                   ; XOR R4 bit 0
             jz      TimerOn                 ; If zero, timer on
 
-            clr.w   &TA0CCR0                ; Clear TA0CCR0 (halt timer)
+            clr     &TA0CCR0                ; Clear TA0CCR0 (halt timer)
             RETI                            ; Return interrupt
             
-TimerOn     bis.w   #0x7FFF, &TA0CCR0       ; TA0CCR0 to 32 767 (~1 second)
+TimerOn     bis     #0x7FFF, &TA0CCR0       ; TA0CCR0 to 32 767 (~1 second)
             RETI                            ; Return interrupt
 
             ; TA0 interrupt
-TA0_ISR     bic.w   #TAIFG,&TA0CTL          ; TA0 interrupt flag clear
+TA0_ISR     bic     #TAIFG,&TA0CTL          ; TA0 interrupt flag clear
             xor.b   #1,&P1OUT               ; P1.0 (GREEN) toggle
             bic.b   R4,&P1OUT               ; If timer off, P1.0 (GREEN) off
             RETI
