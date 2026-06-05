@@ -98,10 +98,11 @@ StopWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
             bis.w   #TASSEL_1,&TA0CTL       ; TA0 source to ACLK (32 768 Hz)
             bis.w   #ID_0,&TA0CTL           ; TA0 divider to /1
             bis.w   #MC_1,&TA0CTL           ; TA0 mode to 1 (up to TA0CCR0)
-            bis.w   #0,&TA0CCR0             ; Clear TA0CCR0 (halt timer)
+            clr.w   &TA0CCR0                ; Clear TA0CCR0 (halt timer)
             bis.w   #TAIE,&TA0CTL           ; TA0 interrupt enable
 
-            and.b   #0,R4                   ; Clear R4
+            clr.b   R4                      ; Clear R4
+            bis.b   #1,R4                   ; Set R4.0
 
             bis.w   #GIE,SR                 ; General interrupt enable
 
@@ -117,9 +118,9 @@ Closed      bis.b   #64,&P1OUT              ; Set P1.6 (RED)
             ; P1 interrupt
 P1_ISR      bic.b   #8,&P1IFG               ; Clear P1.3 interrupt flag
             xor.b   #1,R4                   ; XOR R4 bit 0
-            jnz     TimerOn                 ; If non-zero, timer on
+            jz      TimerOn                 ; If zero, timer on
 
-            and.w   #0,&TA0CCR0             ; Clear TA0CCR0 (halt timer)
+            clr.w   &TA0CCR0                ; Clear TA0CCR0 (halt timer)
             RETI                            ; Return interrupt
             
 TimerOn     bis.w   #0x7FFF, &TA0CCR0       ; TA0CCR0 to 32 767 (~1 second)
@@ -128,6 +129,7 @@ TimerOn     bis.w   #0x7FFF, &TA0CCR0       ; TA0CCR0 to 32 767 (~1 second)
             ; TA0 interrupt
 TA0_ISR     bic.w   #TAIFG,&TA0CTL          ; TA0 interrupt flag clear
             xor.b   #1,&P1OUT               ; P1.0 (GREEN) toggle
+            bic.b   R4,&P1OUT               ; If timer off, P1.0 (GREEN) off
             RETI
 
 ;------------------------------------------------------------------------------
